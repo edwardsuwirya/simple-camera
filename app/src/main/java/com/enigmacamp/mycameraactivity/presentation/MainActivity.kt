@@ -1,38 +1,49 @@
-package com.enigmacamp.mycameraactivity
+package com.enigmacamp.mycameraactivity.presentation
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
-import android.widget.Button
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.lifecycle.ViewModelProvider
+import com.enigmacamp.mycameraactivity.databinding.ActivityMainBinding
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     val REQUEST_IMAGE_CAPTURE = 1
-    private lateinit var photoImageView: ImageView
-    private lateinit var takePictureButton: Button
-
+    private lateinit var binding: ActivityMainBinding
     lateinit var currentPhotoPath: String
+
+    lateinit var viewModel: MainActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        photoImageView = findViewById(R.id.photo_imageView)
-        takePictureButton = findViewById(R.id.takePicture_button)
-        takePictureButton.setOnClickListener {
-            takePictureIntent()
+        binding = ActivityMainBinding.inflate(layoutInflater)
+
+        setContentView(binding.root)
+        binding.apply {
+            takePictureButton.setOnClickListener {
+                takePictureIntent()
+            }
+            uploadButton.setOnClickListener {
+                viewModel.upload(File(currentPhotoPath))
+            }
         }
+        initViewModel()
     }
+
+    private fun initViewModel() {
+        viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
+    }
+
 
     private fun takePictureIntent() {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
@@ -60,19 +71,16 @@ class MainActivity : AppCompatActivity() {
         Untuk full size image nya membutuhkan kode lain.
      */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
 //            val imageBitmap = data?.extras?.get("data") as Bitmap
             showPhoto()
         }
-
-
     }
 
     private fun showPhoto() {
 //        Log.d("CameraActivity", "Photo Path: $currentPhotoPath")
         val imageBitmap = BitmapFactory.decodeFile(currentPhotoPath)
-        photoImageView.setImageBitmap(imageBitmap)
+        binding.photoImageView.setImageBitmap(imageBitmap)
     }
 
     private fun createImageFile(): File {
