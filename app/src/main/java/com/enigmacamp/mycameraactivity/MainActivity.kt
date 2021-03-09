@@ -2,10 +2,12 @@ package com.enigmacamp.mycameraactivity
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
@@ -42,11 +44,11 @@ class MainActivity : AppCompatActivity() {
             }
             photoFile?.also {
                 val photoURI: Uri = FileProvider.getUriForFile(
-                        this,
-                        "com.enigmacamp.mycameraactivity.fileprovider",
-                        it
+                    this,
+                    "com.enigmacamp.mycameraactivity.fileprovider",
+                    it
                 )
-                println(photoURI.toString())
+//                Log.d("CameraActivity", "Photo Uri: $photoURI")
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
             }
@@ -58,18 +60,22 @@ class MainActivity : AppCompatActivity() {
         Untuk full size image nya membutuhkan kode lain.
      */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
 //            val imageBitmap = data?.extras?.get("data") as Bitmap
-            val sourceBitmap =
-                    ImageDecoder.createSource(contentResolver, Uri.fromFile(File(currentPhotoPath)))
-            val imageBitmap = ImageDecoder.decodeBitmap(sourceBitmap)
-            photoImageView.setImageBitmap(imageBitmap)
+            showPhoto()
         }
+
 
     }
 
-    private fun createImageFile(): File {
+    private fun showPhoto() {
+//        Log.d("CameraActivity", "Photo Path: $currentPhotoPath")
+        val imageBitmap = BitmapFactory.decodeFile(currentPhotoPath)
+        photoImageView.setImageBitmap(imageBitmap)
+    }
 
+    private fun createImageFile(): File {
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
 //        val storageDir: File? = getExternalFilesDir(DIRECTORY_PICTURES)
         val imageDir = filesDir
@@ -82,6 +88,7 @@ class MainActivity : AppCompatActivity() {
 //        ).apply {
 //            currentPhotoPath = absolutePath
 //        }
+//        Log.d("CameraActivity", "StorageDir: $storageDir")
         return storageDir.apply {
             currentPhotoPath = absolutePath
         }
