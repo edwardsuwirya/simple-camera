@@ -85,36 +85,49 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPhoto() {
 //        Log.d("CameraActivity", "Photo Path: $currentPhotoPath")
-        val bounds = BitmapFactory.Options()
-        bounds.inJustDecodeBounds = true
-        BitmapFactory.decodeFile(currentPhotoPath, bounds)
-        val opts = BitmapFactory.Options()
-        val bm = BitmapFactory.decodeFile(currentPhotoPath, opts)
-
-        val exif = ExifInterface(currentPhotoPath ?: "")
-        val exifOrientation: Int = exif.getAttributeInt(
-            ExifInterface.TAG_ORIENTATION,
-            ExifInterface.ORIENTATION_NORMAL
-        )
-
-        var rotate = 0
-
-        when (exifOrientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> rotate = 90
-            ExifInterface.ORIENTATION_ROTATE_180 -> rotate = 180
-            ExifInterface.ORIENTATION_ROTATE_270 -> rotate = 270
+        val bounds = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+            BitmapFactory.decodeFile(currentPhotoPath, this)
         }
 
-        val matrix = Matrix()
-        matrix.setRotate(
-            rotate.toFloat(),
-            (bm.getWidth() / 2).toFloat(),
-            (bm.getHeight() / 2).toFloat()
-        )
-        val rotatedBitmap =
-            Bitmap.createBitmap(bm, 0, 0, bounds.outWidth, bounds.outHeight, matrix, true)
-        // Return result
-        binding.photoImageView.setImageBitmap(rotatedBitmap)
+        currentPhotoPath?.let { photoPath ->
+            BitmapFactory.Options().apply {
+                val bm = BitmapFactory.decodeFile(photoPath, this)
+                val exif = ExifInterface(photoPath)
+                val exifOrientation: Int = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL
+                )
+                var rotate = 0
+
+                when (exifOrientation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> rotate = 90
+                    ExifInterface.ORIENTATION_ROTATE_180 -> rotate = 180
+                    ExifInterface.ORIENTATION_ROTATE_270 -> rotate = 270
+                }
+
+                Matrix().apply {
+                    setRotate(
+                        rotate.toFloat(),
+                        (bm.width / 2).toFloat(),
+                        (bm.height / 2).toFloat()
+                    )
+                    val rotatedBitmap =
+                        Bitmap.createBitmap(
+                            bm,
+                            0,
+                            0,
+                            bounds.outWidth,
+                            bounds.outHeight,
+                            this,
+                            true
+                        )
+                    // Return result
+                    binding.photoImageView.setImageBitmap(rotatedBitmap)
+                }
+
+            }
+        }
     }
 
     private fun createImageFile(): File {
