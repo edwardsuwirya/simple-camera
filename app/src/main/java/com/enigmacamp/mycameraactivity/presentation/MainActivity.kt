@@ -1,13 +1,14 @@
 package com.enigmacamp.mycameraactivity.presentation
 
 import android.Manifest
-import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
+import android.os.Environment.*
 import android.util.Log
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
@@ -15,10 +16,9 @@ import androidx.lifecycle.ViewModelProvider
 import com.enigmacamp.mycameraactivity.databinding.ActivityMainBinding
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -78,20 +78,50 @@ class MainActivity : AppCompatActivity() {
             "com.enigmacamp.mycameraactivity.fileprovider",
             photoFile
         )
-//                Log.d("CameraActivity", "Photo Uri: $photoURI")
+//        Log.d("CameraActivity", "Photo Uri: $photoURI")
+
         takePicture.launch(photoURI)
     }
 
     private fun showPhoto() {
 //        Log.d("CameraActivity", "Photo Path: $currentPhotoPath")
-        val imageBitmap = BitmapFactory.decodeFile(currentPhotoPath)
-        binding.photoImageView.setImageBitmap(imageBitmap)
+        val bounds = BitmapFactory.Options()
+        bounds.inJustDecodeBounds = true
+        BitmapFactory.decodeFile(currentPhotoPath, bounds)
+        val opts = BitmapFactory.Options()
+        val bm = BitmapFactory.decodeFile(currentPhotoPath, opts)
+
+        val exif = ExifInterface(currentPhotoPath ?: "")
+        val exifOrientation: Int = exif.getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_NORMAL
+        )
+
+        var rotate = 0
+
+        when (exifOrientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> rotate = 90
+            ExifInterface.ORIENTATION_ROTATE_180 -> rotate = 180
+            ExifInterface.ORIENTATION_ROTATE_270 -> rotate = 270
+        }
+
+        val matrix = Matrix()
+        matrix.setRotate(
+            rotate.toFloat(),
+            (bm.getWidth() / 2).toFloat(),
+            (bm.getHeight() / 2).toFloat()
+        )
+        val rotatedBitmap =
+            Bitmap.createBitmap(bm, 0, 0, bounds.outWidth, bounds.outHeight, matrix, true)
+        // Return result
+        binding.photoImageView.setImageBitmap(rotatedBitmap)
     }
 
     private fun createImageFile(): File {
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
-//        val storageDir: File? = getExternalFilesDir(DIRECTORY_PICTURES)
-        val imageDir = filesDir
+//        val imageDir: File? = getExternalStoragePublicDirectory(DIRECTORY_DCIM)
+        val imageDir: File? = getExternalFilesDir(DIRECTORY_PICTURES)
+//        val imageDir = filesDir
         val storageDir = File(imageDir, "photo_${timeStamp}.jpg")
 
 //        return File.createTempFile(
