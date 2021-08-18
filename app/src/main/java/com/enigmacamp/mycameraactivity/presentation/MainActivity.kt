@@ -1,6 +1,7 @@
 package com.enigmacamp.mycameraactivity.presentation
 
 import android.Manifest
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -8,6 +9,7 @@ import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment.*
+import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -73,14 +75,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun takePictureIntent() {
-        val photoURI: Uri = FileProvider.getUriForFile(
-            this,
-            "com.enigmacamp.mycameraactivity.fileprovider",
-            photoFile
-        )
+
 //        Log.d("CameraActivity", "Photo Uri: $photoURI")
 
-        takePicture.launch(photoURI)
+//        takePicture.launch(photoURI)
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also {
+            val photoURI: Uri = FileProvider.getUriForFile(
+                this,
+                "com.enigmacamp.mycameraactivity.fileprovider",
+                photoFile
+            )
+            it.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+            startActivityForResult(it, REQUEST_IMAGE_CAPTURE)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            showPhoto()
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun showPhoto() {
@@ -132,11 +146,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun createImageFile(): File {
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
-//        val imageDir: File? = getExternalStoragePublicDirectory(DIRECTORY_DCIM)
-        val imageDir: File? = getExternalFilesDir(DIRECTORY_PICTURES)
+        val imageDir: File? = getExternalStoragePublicDirectory(DIRECTORY_PICTURES)
+
+//        val imageDir: File? = getExternalFilesDir(DIRECTORY_PICTURES)
 //        val imageDir = filesDir
         val storageDir = File(imageDir, "photo_${timeStamp}.jpg")
-
 //        return File.createTempFile(
 //                "photo_${timeStamp}_",
 //                ".jpg",
